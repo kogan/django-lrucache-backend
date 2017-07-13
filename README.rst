@@ -21,7 +21,7 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-* [lru-dict](https://pypi.python.org/pypi/lru-dict/)
+* `lru-dict <https://pypi.python.org/pypi/lru-dict/>`_.
 
 `lru-dict` is implemented in C and is unlikely to work with non-CPython
 implementations. There *are* compatible pure python libraries. If you need this
