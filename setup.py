@@ -1,5 +1,11 @@
 import setuptools
 
+with open('README.rst') as readme_file:
+    readme = readme_file.read()
+
+with open('HISTORY.rst') as history_file:
+    history = history_file.read()
+
 setuptools.setup(
     name="django-lrucache-backend",
     version="0.1.0",
@@ -9,7 +15,7 @@ setuptools.setup(
     author_email="josh.smeaton@gmail.com",
 
     description="A smarter local memory cache backend for Django",
-    long_description=open('README.rst').read(),
+    long_description=readme + '\n\n' + history,
 
     packages=setuptools.find_packages(),
 
