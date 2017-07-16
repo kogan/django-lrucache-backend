@@ -3,6 +3,11 @@ from __future__ import print_function
 import subprocess as sp
 
 
+class Complex(object):
+    def __init__(self, value):
+        self.value = value
+
+
 def percentile(sequence, percent):
     if not sequence:
         return None

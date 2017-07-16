@@ -10,7 +10,7 @@ import shutil
 import sys
 import time
 
-from utils import display
+from utils import display, Complex
 
 if sys.hexversion < 0x03000000:
     range = xrange
@@ -23,6 +23,7 @@ PROCS = 8
 OPS = int(1e5)
 RANGE = int(1.1e3)
 WARMUP = int(1e3)
+USE_STRINGS = True
 
 
 def setup():
@@ -47,6 +48,8 @@ def worker(num, name):
     for count in range(OPS):
         key = str(random.randrange(RANGE)).encode('utf-8')
         value = str(count).encode('utf-8') * random.randrange(1, 100)
+        if not USE_STRINGS:
+            value = Complex(value)
         choice = random.random()
 
         if choice < 0.900:
@@ -131,6 +134,11 @@ def dispatch():
 
             os.remove(filename)
 
+        name = '{}-{}-{}'.format(
+            name,
+            'strings' if USE_STRINGS else 'objects',
+            RANGE
+        )
         display(name, timings)
 
 
@@ -157,7 +165,13 @@ if __name__ == '__main__':
         help='Number of warmup operations before timings',
     )
     parser.add_argument(
-        '--profile', action='store_true'
+        '--profile', action='store_true',
+        help='Run the benchmark with cProfile in the foreground'
+
+    )
+    parser.add_argument(
+        '--complex', action='store_true',
+        help='Use class instances as cache values rather than strings'
 
     )
 
@@ -167,9 +181,10 @@ if __name__ == '__main__':
     OPS = int(args.operations)
     RANGE = int(args.range)
     WARMUP = int(args.warmup)
+    USE_STRINGS = not args.complex
 
     if args.profile:
         for x in range(PROCS):
-            worker(x, 'lrumem')
+            worker(x, 'locmem')
     else:
         dispatch()

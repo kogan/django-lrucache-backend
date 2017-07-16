@@ -10,21 +10,19 @@ CACHES = {
     'default': {
         'BACKEND': 'lrucache_backend.LRUObjectCache',
         'OPTIONS': {
-            'MAX_ENTRIES': 1000
+            'MAX_ENTRIES': 500
         },
-        'NAME': 'testingcache'
     },
     'lrumem': {
         'BACKEND': 'lrucache_backend.LRUObjectCache',
         'OPTIONS': {
-            'MAX_ENTRIES': 1000
+            'MAX_ENTRIES': 500
         },
-        'NAME': 'testingcache'
     },
     'locmem': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'OPTIONS': {
-            'MAX_ENTRIES': 1000,
+            'MAX_ENTRIES': 500,
             'CULL_FREQUENCY': 10,
         }
     }
