@@ -8,7 +8,7 @@ with open('HISTORY.rst') as history_file:
 
 setuptools.setup(
     name="django-lrucache-backend",
-    version="0.1.0",
+    version="0.2.0",
     url="https://github.com/kogan/django-lrucache-backend",
 
     author="Josh Smeaton",
