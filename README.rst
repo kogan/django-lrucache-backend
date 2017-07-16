@@ -15,7 +15,7 @@ A smarter local memory cache backend for Django.
    :alt: Cache Performance
 
 `Set Performance <benchmarking/0.2.0/objects-set.png>`_. `Delete performance
-<benchmarking/0.2.0/objects-delete.png>`_
+<benchmarking/0.2.0/objects-delete.png>`_.
 
 About
 -----

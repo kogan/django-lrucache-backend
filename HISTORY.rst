@@ -1,9 +1,8 @@
-=======
 History
 =======
 
-0.2.0 (TBD)
------------
+0.2.0 (2017-07-16)
+------------------
 
 * Don't validate the key
     - delete P90: 20% improvement
