@@ -5,7 +5,7 @@ django-lrucache-backend
     :target: https://pypi.python.org/pypi/django-lrucache-backend
     :alt: Latest PyPI version
 
-.. image:: https://travis-ci.org/kogan/django-lrucache-backend.png
+.. image:: https://travis-ci.org/kogan/django-lrucache-backend.svg?branch=master
    :target: https://travis-ci.org/kogan/django-lrucache-backend
    :alt: Latest Travis CI build status
 
