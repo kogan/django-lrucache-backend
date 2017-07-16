@@ -8,7 +8,7 @@ with open('HISTORY.rst') as history_file:
 
 setuptools.setup(
     name="django-lrucache-backend",
-    version="0.1.0",
+    version="0.2.0",
     url="https://github.com/kogan/django-lrucache-backend",
 
     author="Josh Smeaton",
@@ -17,8 +17,8 @@ setuptools.setup(
     description="A smarter local memory cache backend for Django",
     long_description=readme + '\n\n' + history,
 
-    packages=setuptools.find_packages(),
-
+    packages=setuptools.find_packages(exclude=('benchmarking', )),
+    include_package_data=True,
     install_requires=['lru-dict'],
 
     classifiers=[

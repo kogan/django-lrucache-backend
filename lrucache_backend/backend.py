@@ -42,7 +42,6 @@ class LRUObjectCache(BaseCache):
 
     def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         new_key = self.make_key(key, version=version)
-        self.validate_key(new_key)
         with self._lock.writer():
             if self._has_expired(key, version=version, acquire_lock=False):
                 self._set(new_key, value, timeout)
@@ -55,7 +54,6 @@ class LRUObjectCache(BaseCache):
 
     def _get(self, key, default=None, version=None, acquire_lock=True):
         key = self.make_key(key, version=version)
-        self.validate_key(key)
         with (self._lock.reader() if acquire_lock else dummy()):
             value, expiration = self._cache.get(key, (default, -1))
             if not self._is_expired(expiration):
@@ -74,7 +72,6 @@ class LRUObjectCache(BaseCache):
 
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         key = self.make_key(key, version=version)
-        self.validate_key(key)
         with self._lock.writer():
             self._set(key, value, timeout)
 
@@ -102,7 +99,6 @@ class LRUObjectCache(BaseCache):
 
     def delete(self, key, version=None):
         key = self.make_key(key, version=version)
-        self.validate_key(key)
         with self._lock.writer():
             try:
                 del self._cache[key]

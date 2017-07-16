@@ -185,6 +185,6 @@ if __name__ == '__main__':
 
     if args.profile:
         for x in range(PROCS):
-            worker(x, 'locmem')
+            worker(x, 'lrumem')
     else:
         dispatch()
