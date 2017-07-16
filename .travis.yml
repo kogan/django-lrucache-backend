@@ -4,6 +4,8 @@ matrix:
   include:
     - env: TOXENV=flake8
     - env: TOXENV=isort
+    - env: TOXENV=benchmark
+      python: 3.6
     - env: TOXENV=py27-1.8
     - env: TOXENV=py27-1.9
     - env: TOXENV=py27-1.10

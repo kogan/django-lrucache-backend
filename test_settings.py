@@ -15,11 +15,4 @@ CACHES = {
         },
         'NAME': 'testingcache'
     },
-    'local': {
-        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
-        'TIMEOUT': 600,
-        'OPTIONS': {
-            'MAX_ENTRIES': 50
-        }
-    }
 }
