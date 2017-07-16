@@ -11,6 +11,92 @@ django-lrucache-backend
 
 A smarter local memory cache backend for Django.
 
+.. image:: benchmarking/0.2.0/objects-get.png
+   :alt: Cache Performance
+
+About
+-----
+
+`lrucache_backend` is an in-memory cache that improves upon the existing
+`LocMemCache` that Django provides.
+
+Comes with cache timeouts and a smart eviction strategy that prefers to keep
+keys that are used often and evict keys that are not.
+
+Originally developed to avoid poorly reimplementing local object stores for
+service layer objects. For example:
+
+.. code-block:: python
+
+    def get_data_before(self):
+        if not hasattr(self, '__data'):
+            self.__data = self.expensive_query()
+        return self.__data
+
+    def get_data_after(self):
+        lcache = caches['local']
+        data = lcache.get('our_data')
+        if not data:
+            data = self.expensive_query()
+            lcache.set('our_data', data, timeout=600)
+        return data
+
+The benefits (despite the longer method) include timeouts, sharing data between
+requests, and avoiding network requests. This is especially useful when there
+are hundreds or thousands of property accesses that would hit the cache where
+network overhead would be prohibitive. The `Fat model` pattern can greatly
+benefit from tiered caching.
+
+Good for?
+^^^^^^^^^
+
+An in memory cache is good for small data that changes rarely. It's effectively
+a global dictionary shared between requests in the same process. Small lookup
+tables and database backed settings are good candidates.
+
+A small number of keys should be used to avoid engaging the culling strategy
+of the cache. Performance goes down fast as soon as the maximum number of keys
+are reached, and keys start to evict.
+
+This should **not** be used as your primary cache, but it makes for an
+excellent secondary cache when you want to avoid the overhead of a network call.
+
+Use for:
+
+- Small lookup tables
+- Settings
+- Backing store for your service objects
+- Remembering values for the duration of a request or celery task
+- Small global template fragments like sidebars or footers
+- Secondary cache
+
+Bad for?
+^^^^^^^^
+
+An in memory cache is terrible for data that changes often. Because the cache
+is process local, it's extremely difficult to coordinate cache invalidation
+from external processes. For that reason, this library does nothing to support
+cache invalidation.
+
+The cache shares memory with the application, so it's extremely important to
+avoid storing a lot of keys, or any large values.
+
+Do **not** use for:
+
+- Instance attributes/properties
+- Full templates
+- Tables with a large number of rows
+- Large values
+- Large lists
+- Primary cache
+
+Differences from LocMemCache
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Avoids pickling
+- Avoids key name validation
+- Uses an LRU eviction algorithm rather than a random percentage culling strategy
+
 Installation
 ------------
 
@@ -39,7 +125,7 @@ Configure your `CACHES` Django setting appropriately:
             'BACKEND': 'lrucache_backend.LRUObjectCache',
             'TIMEOUT': 600,
             'OPTIONS': {
-                'MAX_ENTRIES': 50
+                'MAX_ENTRIES': 100
             },
             'NAME': 'optional-name'
         }
