@@ -17,8 +17,8 @@ setuptools.setup(
     description="A smarter local memory cache backend for Django",
     long_description=readme + '\n\n' + history,
 
-    packages=setuptools.find_packages(),
-
+    packages=setuptools.find_packages(exclude=('benchmarking', )),
+    include_package_data=True,
     install_requires=['lru-dict'],
 
     classifiers=[
