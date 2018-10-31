@@ -1,6 +1,17 @@
 History
 =======
 
+2.0.0 UNRELEASED
+----------------
+
+* Dropped support for Django < 1.11
+* Updated Django support for >= 2.1
+* Removed python 3.3, 3.4, and 3.5 from build matrix. Support will be best effort.
+* Changed locks from a Read-Write lock to an RLock, as a read lock is incorrect for LRU algorithm
+
+TODO: Benchmarks
+
+
 0.2.0 (2017-07-16)
 ------------------
 
