@@ -2,7 +2,6 @@
 from __future__ import absolute_import, unicode_literals
 
 import time
-from contextlib import contextmanager
 from threading import RLock
 
 from django.core.cache.backends.base import DEFAULT_TIMEOUT, BaseCache
@@ -38,7 +37,7 @@ class LRUObjectCache(BaseCache):
         new_key = self.make_key(key, version=version)
         with self._lock:
             if self._has_expired(key, version=version):
-                self.set(new_key, value, timeout)
+                self._set(new_key, value, timeout)
                 return True
             return False
 
@@ -59,20 +58,23 @@ class LRUObjectCache(BaseCache):
                 pass
             return default, -1
 
+    def _set(self, key, value, timeout=DEFAULT_TIMEOUT):
+        timeout = self.get_backend_timeout(timeout)
+        self._cache[key] = (value, timeout)
+
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         key = self.make_key(key, version=version)
-        timeout = self.get_backend_timeout(timeout)
         with self._lock:
-            self._cache[key] = (value, timeout)
+            self._set(key, value, timeout)
 
     def incr(self, key, delta=1, version=None):
-        new_key = self.make_key(key, version=version)
         with self._lock:
             # remain locked the entire time so the incr is guaranteed to be correct
             value, exp = self._get(key, version=version)
             if value is None:
                 raise ValueError("Key '%s' not found" % key)
             new_value = value + delta
+            new_key = self.make_key(key, version=version)
             self._cache[new_key] = (new_value, exp)
         return new_value
 
