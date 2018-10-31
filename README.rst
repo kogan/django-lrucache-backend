@@ -155,8 +155,8 @@ best interests to use it as sparingly and deliberately as possible.
 Compatibility
 -------------
 
-Django 1.8 - Django master. All Python versions supported by compatible Django
-versions.
+Django 1.8 - Django 2.0.9. (For compatibility with 2.1+, see #5). All Python 
+versions supported by compatible Django versions.
 
 Licence
 -------
