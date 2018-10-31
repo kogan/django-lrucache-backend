@@ -8,7 +8,7 @@ with open('HISTORY.rst') as history_file:
 
 setuptools.setup(
     name="django-lrucache-backend",
-    version="0.2.1",
+    version="2.0.0",
     url="https://github.com/kogan/django-lrucache-backend",
 
     author="Josh Smeaton",
@@ -22,7 +22,7 @@ setuptools.setup(
     install_requires=['lru-dict', 'Django'],
 
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
@@ -30,14 +30,12 @@ setuptools.setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.4',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Framework :: Django',
-        'Framework :: Django :: 1.8',
-        'Framework :: Django :: 1.9',
-        'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
-        'Framework :: Django :: 2.0',       
+        'Framework :: Django :: 2.0',
+        'Framework :: Django :: 2.1',
+        'Framework :: Django :: 2.2',
     ],
 )

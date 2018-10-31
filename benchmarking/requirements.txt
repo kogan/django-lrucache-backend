@@ -1,5 +1,5 @@
 # dependencies for generating benchmark and profiling data
 
-django>=1.11<2.0
+django>=2.0<2.1
 lru-dict==1.1.6
 matplotlib==2.0.2

@@ -2,10 +2,9 @@
 from __future__ import absolute_import, unicode_literals
 
 import time
-from contextlib import contextmanager
+from threading import RLock
 
 from django.core.cache.backends.base import DEFAULT_TIMEOUT, BaseCache
-from django.utils.synch import RWLock
 from lru import LRU  # dependency: lru-dict
 
 "Thread-safe in-memory LRU object cache backend."
@@ -13,12 +12,6 @@ from lru import LRU  # dependency: lru-dict
 # multiple named local memory caches.
 _caches = {}
 _locks = {}
-
-
-@contextmanager
-def dummy():
-    """A context manager that does nothing special."""
-    yield
 
 
 class LRUObjectCache(BaseCache):
@@ -38,28 +31,27 @@ class LRUObjectCache(BaseCache):
     def __init__(self, name, params):
         BaseCache.__init__(self, params)
         self._cache = _caches.setdefault(name, LRU(self._max_entries))
-        self._lock = _locks.setdefault(name, RWLock())
+        self._lock = _locks.setdefault(name, RLock())
 
     def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         new_key = self.make_key(key, version=version)
-        with self._lock.writer():
-            if self._has_expired(key, version=version, acquire_lock=False):
+        with self._lock:
+            if self._has_expired(key, version=version):
                 self._set(new_key, value, timeout)
                 return True
             return False
 
-    def get(self, key, default=None, version=None, acquire_lock=True):
-        value, timeout = self._get(key, default, version, acquire_lock)
+    def get(self, key, default=None, version=None):
+        value, timeout = self._get(key, default, version)
         return value
 
-    def _get(self, key, default=None, version=None, acquire_lock=True):
+    def _get(self, key, default=None, version=None):
         key = self.make_key(key, version=version)
-        with (self._lock.reader() if acquire_lock else dummy()):
+        with self._lock:
             value, expiration = self._cache.get(key, (default, -1))
-            if not self._is_expired(expiration):
-                return value, expiration
-
-        with (self._lock.writer() if acquire_lock else dummy()):
+        if not self._is_expired(expiration):
+            return value, expiration
+        with self._lock:
             try:
                 del self._cache[key]
             except KeyError:
@@ -72,17 +64,18 @@ class LRUObjectCache(BaseCache):
 
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         key = self.make_key(key, version=version)
-        with self._lock.writer():
+        with self._lock:
             self._set(key, value, timeout)
 
     def incr(self, key, delta=1, version=None):
-        with self._lock.writer():
-            value, exp = self._get(key, version=version, acquire_lock=False)
+        with self._lock:
+            # remain locked the entire time so the incr is guaranteed to be correct
+            value, exp = self._get(key, version=version)
             if value is None:
                 raise ValueError("Key '%s' not found" % key)
             new_value = value + delta
-            key = self.make_key(key, version=version)
-            self._cache[key] = (new_value, exp)
+            new_key = self.make_key(key, version=version)
+            self._cache[new_key] = (new_value, exp)
         return new_value
 
     def has_key(self, key, version=None):
@@ -90,7 +83,7 @@ class LRUObjectCache(BaseCache):
         if not self._has_expired(key, version=version):
             return True
 
-        with self._lock.writer():
+        with self._lock:
             try:
                 del self._cache[key]
             except KeyError:
@@ -99,17 +92,18 @@ class LRUObjectCache(BaseCache):
 
     def delete(self, key, version=None):
         key = self.make_key(key, version=version)
-        with self._lock.writer():
+        with self._lock:
             try:
                 del self._cache[key]
             except KeyError:
                 pass
 
     def clear(self):
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
 
-    def _has_expired(self, key, version=None, acquire_lock=True):
-        _, exp = self._get(key, version=version, acquire_lock=acquire_lock)
+    def _has_expired(self, key, version=None):
+        _, exp = self._get(key, version=version)
         return self._is_expired(exp)
 
     def _is_expired(self, expiration):

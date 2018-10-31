@@ -11,11 +11,11 @@ django-lrucache-backend
 
 A smarter local memory cache backend for Django.
 
-.. image:: benchmarking/0.2.0/objects-get.png
+.. image:: benchmarking/2.0.0/objects-get.png
    :alt: Cache Performance
 
-`Set Performance <benchmarking/0.2.0/objects-set.png>`_. `Delete performance
-<benchmarking/0.2.0/objects-delete.png>`_.
+`Set Performance <benchmarking/2.0.0/objects-set.png>`_. `Delete performance
+<benchmarking/2.0.0/objects-delete.png>`_.
 
 About
 -----
@@ -155,8 +155,9 @@ best interests to use it as sparingly and deliberately as possible.
 Compatibility
 -------------
 
-Django 1.8 - Django 2.0.9. (For compatibility with 2.1+, see #5). All Python 
-versions supported by compatible Django versions.
+Django 1.11 - Django 2.2.
+Python support is 2.7 for Django 1.11, and 3.6+ for Django >= 2.0.
+Python 3.4 - 3.5 probably works with Django < 2.1, but is no longer tested.
 
 Licence
 -------
