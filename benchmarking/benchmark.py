@@ -3,12 +3,12 @@
 from __future__ import print_function
 
 import collections as co
-import multiprocessing as mp
 import os
 import random
 import shutil
 import sys
 import time
+from threading import Thread
 
 from utils import display, Complex
 
@@ -94,7 +94,7 @@ def prepare(name):
 
     try:
         obj.close()
-    except:
+    except Exception:
         pass
 
 
@@ -106,12 +106,12 @@ def dispatch():
     for name in ['locmem', 'lrumem']:
         shutil.rmtree('tmp', ignore_errors=True)
 
-        preparer = mp.Process(target=prepare, args=(name,))
+        preparer = Thread(target=prepare, args=(name,))
         preparer.start()
         preparer.join()
 
         processes = [
-            mp.Process(target=worker, args=(value, name))
+            Thread(target=worker, args=(value, name))
             for value in range(PROCS)
         ]
 

@@ -11,11 +11,11 @@ django-lrucache-backend
 
 A smarter local memory cache backend for Django.
 
-.. image:: benchmarking/0.2.0/objects-get.png
+.. image:: benchmarking/2.0.0/objects-get.png
    :alt: Cache Performance
 
-`Set Performance <benchmarking/0.2.0/objects-set.png>`_. `Delete performance
-<benchmarking/0.2.0/objects-delete.png>`_.
+`Set Performance <benchmarking/2.0.0/objects-set.png>`_. `Delete performance
+<benchmarking/2.0.0/objects-delete.png>`_.
 
 About
 -----
