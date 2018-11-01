@@ -10,7 +10,7 @@ History
 * Changed locks from a Read-Write lock to an RLock, as a read lock is incorrect for LRU algorithm
 * Changed benchmark script to use threads rather than multiprocessing so that locks
   will be engaged during benchmarks.
-
+* Now using poetry to build
 
 Benchmarks ::
 

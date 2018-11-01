@@ -7,7 +7,10 @@ license = "MIT"
 readme = "README.rst"
 repository = "https://github.com/kogan/django-lrucache-backend"
 homepage = "https://github.com/kogan/django-lrucache-backend"
-exclude = ["benchmarking"]
+packages = [
+    { include = "lrucache_backend" }
+]
+exclude = ["benchmarking/**/*"]
 keywords = ["django", "cache", "lru"]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
