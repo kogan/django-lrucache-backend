@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "django-lrucache-backend"
-version = "2.0.0"
+version = "3.0.0"
 description = "A smarter local memory cache backend for Django"
 authors = ["Josh Smeaton <josh.smeaton@gmail.com>"]
 license = "MIT"
@@ -16,20 +16,20 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Framework :: Django",
-    "Framework :: Django :: 1.11",
-    "Framework :: Django :: 2.0",
-    "Framework :: Django :: 2.1",
-    # "Framework :: Django :: 2.2",
+    "Framework :: Django :: 2.2",
+    "Framework :: Django :: 3.0",
 ]
 
 [tool.poetry.dependencies]
-python = "~2.7 || ^3.6"
+python = ">=3.6.10"
 lru-dict = "^1.1"
-Django = "^1.11"
+django = ">=2.2"
 
 [tool.poetry.dev-dependencies]
-tox = "^3.5"
-matplotlib = "^3.0"
-flake8 = "^3.6"
-isort = "^4.3"
-black = "^18.3-alpha.0"
+tox = ">=3.5"
+matplotlib = ">=3.0"
+flake8 = ">=3.6"
+isort = ">=4.3"
+black = ">=19.10b0"
+mypy = "^0.770"
+pre-commit = "^2.2.0"

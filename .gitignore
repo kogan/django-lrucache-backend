@@ -1,4 +1,6 @@
 *.py[cod]
+.mypy_cache
+poetry.lock
 
 # C extensions
 *.so
