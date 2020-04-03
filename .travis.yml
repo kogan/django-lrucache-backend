@@ -15,7 +15,7 @@ matrix:
   fast_finish: true
 
 install:
-  - pip install tox coveralls "virtualenv<14.0"
+  - pip install tox coveralls virtualenv
 
 script:
   - tox

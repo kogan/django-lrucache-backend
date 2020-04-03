@@ -4,4 +4,5 @@ include README.rst
 include test_settings.py
 
 recursive-exclude * __pycache__
+recursive-exclude * .mypy_cache
 recursive-exclude * *.py[co]
