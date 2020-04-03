@@ -1,6 +1,16 @@
 History
 =======
 
+3.0.0 (2020-04-03)
+
+* Dropped support for Django 1.11
+* Dropped support for Django < 2.2
+* Dropped support for python 2
+
+Benchmarks ::
+
+TODO
+
 2.0.0 (2018-11-01)
 ------------------
 

@@ -155,9 +155,8 @@ best interests to use it as sparingly and deliberately as possible.
 Compatibility
 -------------
 
-Django 1.11 - Django 2.2.
-Python support is 2.7 for Django 1.11, and 3.6+ for Django >= 2.0.
-Python 3.4 - 3.5 probably works with Django < 2.1, but is no longer tested.
+Django 2.2+
+Python 3.6+
 
 Licence
 -------
