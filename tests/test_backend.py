@@ -4,7 +4,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import time
 
 from django.test import TestCase
-from lrucache_backend import LocMemObjectCache, LRUObjectCache
+from lrucache_backend import LRUObjectCache
 
 
 # functions/classes for complex data type tests
@@ -21,10 +21,13 @@ class ObjectCacheTests(TestCase):
 
     # Tests copied from django/tests/cache/tests.py
     def setUp(self):
-        self.cache = LRUObjectCache("lru", dict(max_entries=50))
+        self.cache = LRUObjectCache("lru", dict(max_entries=50, cull_frequency=50))
 
     def tearDown(self):
         self.cache.clear()
+
+    def test_get_missing_key(self):
+        self.assertEqual(self.cache.get("missing", default=1), 1)
 
     def test_eviction(self):
         cache = self.cache
@@ -39,28 +42,28 @@ class ObjectCacheTests(TestCase):
         self.assertIn(49, cache)
         self.assertNotIn(0, cache)
 
-        # In promotes
+        # In does not promote
         self.assertIn(1, cache)
         cache.set("b", "b")
-        self.assertNotIn(2, cache)
+        self.assertNotIn(1, cache)
 
         # Add will evict
         self.assertFalse(cache.add("a", "a"))
-        self.assertIn(1, cache)
+        self.assertIn(2, cache)
         self.assertTrue(cache.add("c", "c"))
-        self.assertNotIn(3, cache)
+        self.assertNotIn(2, cache)
 
         # Get does not evict
         self.assertEqual(cache.get("c"), "c")
-        self.assertIn(4, cache)
+        self.assertIn(3, cache)
         self.assertIsNone(cache.get("d"))
-        self.assertIn(5, cache)
+        self.assertIn(3, cache)
 
         # Get promotes
-        self.assertEqual(cache.get(6), 6)
+        self.assertEqual(cache.get(3), 3)
         cache.set("d", "d")
-        self.assertIn(6, cache)
-        self.assertNotIn(7, cache)
+        self.assertIn(3, cache)
+        self.assertNotIn(4, cache)
 
     def test_multiple_caches(self):
         "Multiple caches are isolated"
@@ -74,12 +77,14 @@ class ObjectCacheTests(TestCase):
         """incr/decr does not modify expiry time (matches memcached behavior)"""
         cache = self.cache
         key = "value"
+        internal_key = cache.make_key(key)
         cache.set(key, 1, timeout=10000)
-        _, exp = cache._get(key)
+        self.assertEqual(cache._cache[internal_key], 1)
+        exp = cache._expire_info[internal_key]
         cache.incr(key)
-        self.assertEqual(exp, cache._get(key)[1])
+        self.assertEqual(exp, cache._expire_info[internal_key])
         cache.decr(key)
-        self.assertEqual(exp, cache._get(key)[1])
+        self.assertEqual(exp, cache._expire_info[internal_key])
 
     def test_simple(self):
         # Simple cache set/get works
@@ -357,111 +362,36 @@ class ObjectCacheTests(TestCase):
     def test_cache_versioning_get_set(self):
         # set, using default version = 1
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
 
         cache.set("answer1", 42)
         self.assertEqual(cache.get("answer1"), 42)
         self.assertEqual(cache.get("answer1", version=1), 42)
         self.assertIsNone(cache.get("answer1", version=2))
 
-        self.assertIsNone(cache2.get("answer1"))
-        self.assertEqual(cache2.get("answer1", version=1), 42)
-        self.assertIsNone(cache2.get("answer1", version=2))
-
-        # set, default version = 1, but manually override version = 2
-        cache.set("answer2", 42, version=2)
-        self.assertIsNone(cache.get("answer2"))
-        self.assertIsNone(cache.get("answer2", version=1))
-        self.assertEqual(cache.get("answer2", version=2), 42)
-
-        self.assertEqual(cache2.get("answer2"), 42)
-        self.assertIsNone(cache2.get("answer2", version=1))
-        self.assertEqual(cache2.get("answer2", version=2), 42)
-
-        # v2 set, using default version = 2
-        cache2.set("answer3", 42)
-        self.assertIsNone(cache.get("answer3"))
-        self.assertIsNone(cache.get("answer3", version=1))
-        self.assertEqual(cache.get("answer3", version=2), 42)
-
-        self.assertEqual(cache2.get("answer3"), 42)
-        self.assertIsNone(cache2.get("answer3", version=1))
-        self.assertEqual(cache2.get("answer3", version=2), 42)
-
-        # v2 set, default version = 2, but manually override version = 1
-        cache2.set("answer4", 42, version=1)
-        self.assertEqual(cache.get("answer4"), 42)
-        self.assertEqual(cache.get("answer4", version=1), 42)
-        self.assertIsNone(cache.get("answer4", version=2))
-
-        self.assertIsNone(cache2.get("answer4"))
-        self.assertEqual(cache2.get("answer4", version=1), 42)
-        self.assertIsNone(cache2.get("answer4", version=2))
+        cache.set("answer1", 40, version=2)
+        self.assertEqual(cache.get("answer1", version=1), 42)
+        self.assertEqual(cache.get("answer1", version=2), 40)
 
     def test_cache_versioning_add(self):
         # add, default version = 1, but manually override version = 2
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
 
+        cache.add("answer1", 41, version=1)
         cache.add("answer1", 42, version=2)
-        self.assertIsNone(cache.get("answer1", version=1))
+        self.assertEqual(cache.get("answer1"), 41)
+        self.assertEqual(cache.get("answer1", version=1), 41)
         self.assertEqual(cache.get("answer1", version=2), 42)
-
-        cache.add("answer1", 37, version=2)
-        self.assertIsNone(cache.get("answer1", version=1))
-        self.assertEqual(cache.get("answer1", version=2), 42)
-
-        cache.add("answer1", 37, version=1)
-        self.assertEqual(cache.get("answer1", version=1), 37)
-        self.assertEqual(cache.get("answer1", version=2), 42)
-
-        # v2 add, using default version = 2
-        cache2.add("answer2", 42)
-        self.assertIsNone(cache.get("answer2", version=1))
-        self.assertEqual(cache.get("answer2", version=2), 42)
-
-        cache2.add("answer2", 37)
-        self.assertIsNone(cache.get("answer2", version=1))
-        self.assertEqual(cache.get("answer2", version=2), 42)
-
-        cache2.add("answer2", 37, version=1)
-        self.assertEqual(cache.get("answer2", version=1), 37)
-        self.assertEqual(cache.get("answer2", version=2), 42)
-
-        # v2 add, default version = 2, but manually override version = 1
-        cache2.add("answer3", 42, version=1)
-        self.assertEqual(cache.get("answer3", version=1), 42)
-        self.assertIsNone(cache.get("answer3", version=2))
-
-        cache2.add("answer3", 37, version=1)
-        self.assertEqual(cache.get("answer3", version=1), 42)
-        self.assertIsNone(cache.get("answer3", version=2))
-
-        cache2.add("answer3", 37)
-        self.assertEqual(cache.get("answer3", version=1), 42)
-        self.assertEqual(cache.get("answer3", version=2), 37)
 
     def test_cache_versioning_has_key(self):
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
-        cache.set("answer1", 42)
-
-        # has_key
-        self.assertTrue(cache.has_key("answer1"))  # noqa: W601
-        self.assertTrue(cache.has_key("answer1", version=1))  # noqa: W601
-        self.assertFalse(cache.has_key("answer1", version=2))  # noqa: W601
-
-        self.assertFalse(cache2.has_key("answer1"))  # noqa: W601
-        self.assertTrue(cache2.has_key("answer1", version=1))  # noqa: W601
-        self.assertFalse(cache2.has_key("answer1", version=2))  # noqa: W601
+        cache.add("answer1", 41, version=1)
+        cache.add("answer1", 42, version=2)
+        self.assertTrue(cache.has_key("answer1", version=1))
+        self.assertTrue(cache.has_key("answer1", version=2))
+        self.assertFalse(cache.has_key("answer1", version=3))
 
     def test_cache_versioning_delete(self):
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
 
         cache.set("answer1", 37, version=1)
         cache.set("answer1", 42, version=2)
@@ -475,65 +405,38 @@ class ObjectCacheTests(TestCase):
         self.assertEqual(cache.get("answer2", version=1), 37)
         self.assertIsNone(cache.get("answer2", version=2))
 
-        cache.set("answer3", 37, version=1)
-        cache.set("answer3", 42, version=2)
-        cache2.delete("answer3")
-        self.assertEqual(cache.get("answer3", version=1), 37)
-        self.assertIsNone(cache.get("answer3", version=2))
-
-        cache.set("answer4", 37, version=1)
-        cache.set("answer4", 42, version=2)
-        cache2.delete("answer4", version=1)
-        self.assertIsNone(cache.get("answer4", version=1))
-        self.assertEqual(cache.get("answer4", version=2), 42)
-
     def test_cache_versioning_incr_decr(self):
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
 
         cache.set("answer1", 37, version=1)
         cache.set("answer1", 42, version=2)
+
         cache.incr("answer1")
         self.assertEqual(cache.get("answer1", version=1), 38)
         self.assertEqual(cache.get("answer1", version=2), 42)
+
         cache.decr("answer1")
         self.assertEqual(cache.get("answer1", version=1), 37)
         self.assertEqual(cache.get("answer1", version=2), 42)
 
-        cache.set("answer2", 37, version=1)
-        cache.set("answer2", 42, version=2)
-        cache.incr("answer2", version=2)
-        self.assertEqual(cache.get("answer2", version=1), 37)
-        self.assertEqual(cache.get("answer2", version=2), 43)
-        cache.decr("answer2", version=2)
-        self.assertEqual(cache.get("answer2", version=1), 37)
-        self.assertEqual(cache.get("answer2", version=2), 42)
+        cache.incr("answer1", version=1)
+        self.assertEqual(cache.get("answer1", version=1), 38)
+        self.assertEqual(cache.get("answer1", version=2), 42)
 
-        cache.set("answer3", 37, version=1)
-        cache.set("answer3", 42, version=2)
-        cache2.incr("answer3")
-        self.assertEqual(cache.get("answer3", version=1), 37)
-        self.assertEqual(cache.get("answer3", version=2), 43)
-        cache2.decr("answer3")
-        self.assertEqual(cache.get("answer3", version=1), 37)
-        self.assertEqual(cache.get("answer3", version=2), 42)
+        cache.incr("answer1", version=2)
+        self.assertEqual(cache.get("answer1", version=1), 38)
+        self.assertEqual(cache.get("answer1", version=2), 43)
 
-        cache.set("answer4", 37, version=1)
-        cache.set("answer4", 42, version=2)
-        cache2.incr("answer4", version=1)
-        self.assertEqual(cache.get("answer4", version=1), 38)
-        self.assertEqual(cache.get("answer4", version=2), 42)
-        cache2.decr("answer4", version=1)
-        self.assertEqual(cache.get("answer4", version=1), 37)
-        self.assertEqual(cache.get("answer4", version=2), 42)
+        cache.decr("answer1", version=1)
+        self.assertEqual(cache.get("answer1", version=1), 37)
+        self.assertEqual(cache.get("answer1", version=2), 43)
+
+        cache.decr("answer1", version=2)
+        self.assertEqual(cache.get("answer1", version=1), 37)
+        self.assertEqual(cache.get("answer1", version=2), 42)
 
     def test_cache_versioning_get_set_many(self):
         cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
-
-        # set, using default version = 1
         cache.set_many({"ford1": 37, "arthur1": 42})
         self.assertEqual(cache.get_many(["ford1", "arthur1"]), {"ford1": 37, "arthur1": 42})
         self.assertEqual(
@@ -541,122 +444,9 @@ class ObjectCacheTests(TestCase):
         )
         self.assertEqual(cache.get_many(["ford1", "arthur1"], version=2), {})
 
-        self.assertEqual(cache2.get_many(["ford1", "arthur1"]), {})
-        self.assertEqual(
-            cache2.get_many(["ford1", "arthur1"], version=1), {"ford1": 37, "arthur1": 42}
-        )
-        self.assertEqual(cache2.get_many(["ford1", "arthur1"], version=2), {})
-
-        # set, default version = 1, but manually override version = 2
         cache.set_many({"ford2": 37, "arthur2": 42}, version=2)
         self.assertEqual(cache.get_many(["ford2", "arthur2"]), {})
         self.assertEqual(cache.get_many(["ford2", "arthur2"], version=1), {})
         self.assertEqual(
             cache.get_many(["ford2", "arthur2"], version=2), {"ford2": 37, "arthur2": 42}
         )
-
-        self.assertEqual(cache2.get_many(["ford2", "arthur2"]), {"ford2": 37, "arthur2": 42})
-        self.assertEqual(cache2.get_many(["ford2", "arthur2"], version=1), {})
-        self.assertEqual(
-            cache2.get_many(["ford2", "arthur2"], version=2), {"ford2": 37, "arthur2": 42}
-        )
-
-        # v2 set, using default version = 2
-        cache2.set_many({"ford3": 37, "arthur3": 42})
-        self.assertEqual(cache.get_many(["ford3", "arthur3"]), {})
-        self.assertEqual(cache.get_many(["ford3", "arthur3"], version=1), {})
-        self.assertEqual(
-            cache.get_many(["ford3", "arthur3"], version=2), {"ford3": 37, "arthur3": 42}
-        )
-
-        self.assertEqual(cache2.get_many(["ford3", "arthur3"]), {"ford3": 37, "arthur3": 42})
-        self.assertEqual(cache2.get_many(["ford3", "arthur3"], version=1), {})
-        self.assertEqual(
-            cache2.get_many(["ford3", "arthur3"], version=2), {"ford3": 37, "arthur3": 42}
-        )
-
-        # v2 set, default version = 2, but manually override version = 1
-        cache2.set_many({"ford4": 37, "arthur4": 42}, version=1)
-        self.assertEqual(cache.get_many(["ford4", "arthur4"]), {"ford4": 37, "arthur4": 42})
-        self.assertEqual(
-            cache.get_many(["ford4", "arthur4"], version=1), {"ford4": 37, "arthur4": 42}
-        )
-        self.assertEqual(cache.get_many(["ford4", "arthur4"], version=2), {})
-
-        self.assertEqual(cache2.get_many(["ford4", "arthur4"]), {})
-        self.assertEqual(
-            cache2.get_many(["ford4", "arthur4"], version=1), {"ford4": 37, "arthur4": 42}
-        )
-        self.assertEqual(cache2.get_many(["ford4", "arthur4"], version=2), {})
-
-    def test_incr_version(self):
-        cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
-
-        cache.set("answer", 42, version=2)
-        self.assertIsNone(cache.get("answer"))
-        self.assertIsNone(cache.get("answer", version=1))
-        self.assertEqual(cache.get("answer", version=2), 42)
-        self.assertIsNone(cache.get("answer", version=3))
-
-        self.assertEqual(cache.incr_version("answer", version=2), 3)
-        self.assertIsNone(cache.get("answer"))
-        self.assertIsNone(cache.get("answer", version=1))
-        self.assertIsNone(cache.get("answer", version=2))
-        self.assertEqual(cache.get("answer", version=3), 42)
-
-        cache2.set("answer2", 42)
-        self.assertEqual(cache2.get("answer2"), 42)
-        self.assertIsNone(cache2.get("answer2", version=1))
-        self.assertEqual(cache2.get("answer2", version=2), 42)
-        self.assertIsNone(cache2.get("answer2", version=3))
-
-        self.assertEqual(cache2.incr_version("answer2"), 3)
-        self.assertIsNone(cache2.get("answer2"))
-        self.assertIsNone(cache2.get("answer2", version=1))
-        self.assertIsNone(cache2.get("answer2", version=2))
-        self.assertEqual(cache2.get("answer2", version=3), 42)
-
-        with self.assertRaises(ValueError):
-            cache.incr_version("does_not_exist")
-
-    def test_decr_version(self):
-        cache = self.cache
-        cache2 = LRUObjectCache("lru2", dict(VERSION=2))
-        cache2._cache = cache._cache
-
-        cache.set("answer", 42, version=2)
-        self.assertIsNone(cache.get("answer"))
-        self.assertIsNone(cache.get("answer", version=1))
-        self.assertEqual(cache.get("answer", version=2), 42)
-
-        self.assertEqual(cache.decr_version("answer", version=2), 1)
-        self.assertEqual(cache.get("answer"), 42)
-        self.assertEqual(cache.get("answer", version=1), 42)
-        self.assertIsNone(cache.get("answer", version=2))
-
-        cache2.set("answer2", 42)
-        self.assertEqual(cache2.get("answer2"), 42)
-        self.assertIsNone(cache2.get("answer2", version=1))
-        self.assertEqual(cache2.get("answer2", version=2), 42)
-
-        self.assertEqual(cache2.decr_version("answer2"), 1)
-        self.assertIsNone(cache2.get("answer2"))
-        self.assertEqual(cache2.get("answer2", version=1), 42)
-        self.assertIsNone(cache2.get("answer2", version=2))
-
-        with self.assertRaises(ValueError):
-            cache.decr_version("does_not_exist", version=2)
-
-
-class BackendObjectCacheTests(ObjectCacheTests):
-    def setUp(self):
-        from django.core.cache import cache
-
-        self.cache = cache
-
-
-class PureObjectCacheTests(ObjectCacheTests):
-    def setUp(self):
-        self.cache = LocMemObjectCache("lru_pure", dict(max_entries=50, cull_frequency=10))

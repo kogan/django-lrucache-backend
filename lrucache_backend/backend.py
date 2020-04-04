@@ -1,112 +1,57 @@
-# -*- coding: utf-8 -*-
-from __future__ import absolute_import, unicode_literals
-
-import time
-from threading import RLock
-
-from django.core.cache.backends.base import DEFAULT_TIMEOUT, BaseCache
-from lru import LRU  # dependency: lru-dict
-
-"Thread-safe in-memory LRU object cache backend."
-# Global in-memory store of cache data. Keyed by name, to provide
-# multiple named local memory caches.
-_caches = {}
-_locks = {}
+from django.core.cache.backends.locmem import DEFAULT_TIMEOUT, LocMemCache
 
 
-class LRUObjectCache(BaseCache):
+class LRUObjectCache(LocMemCache):
     """
-    A local memory cache that:
+    A subclass of the Django built in LocMemCache that:
 
-        1. Avoids serialization and deserialization
-        2. Implements an LRU eviction strategy
-        3. Implements timeouts on add()/get()/has_key()
+    1. Does not pickle values
+    2. Does not validate cache keys
 
-    Uses a C based LRU dict for performance. See: https://github.com/amitdev/lru-dict
-
-    Honours `MAX_ENTRIES` but not `CULL_FREQUENCY`, as the LRU algorithm will
-    evict the least recently used value as required.
+    This cache backend has better performance, but also serves a different
+    function from regular Django Cache backends. It serves as a global object
+    cache where instances of objects are shared.
     """
 
-    def __init__(self, name, params):
-        BaseCache.__init__(self, params)
-        self._cache = _caches.setdefault(name, LRU(self._max_entries))
-        self._lock = _locks.setdefault(name, RLock())
+    def validate_key(self, key):
+        """
+        Don't perform char validation, which can be substantial overhead for no
+        gain. This backend is not used like a memcache backend would be.
+        """
+        return
 
     def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
-        new_key = self.make_key(key, version=version)
+        key = self.make_key(key, version=version)
         with self._lock:
-            if self._has_expired(key, version=version):
-                self._set(new_key, value, timeout)
+            if self._has_expired(key):
+                self._set(key, value, timeout)
                 return True
             return False
 
     def get(self, key, default=None, version=None):
-        value, timeout = self._get(key, default, version)
-        return value
-
-    def _get(self, key, default=None, version=None):
         key = self.make_key(key, version=version)
         with self._lock:
-            value, expiration = self._cache.get(key, (default, -1))
-        if not self._is_expired(expiration):
-            return value, expiration
-        with self._lock:
-            try:
-                del self._cache[key]
-            except KeyError:
-                pass
-            return default, -1
-
-    def _set(self, key, value, timeout=DEFAULT_TIMEOUT):
-        timeout = self.get_backend_timeout(timeout)
-        self._cache[key] = (value, timeout)
+            if self._has_expired(key):
+                self._delete(key)
+                return default
+            value = self._cache[key]
+            self._cache.move_to_end(key, last=False)
+        return value
 
     def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         key = self.make_key(key, version=version)
+        self.validate_key(key)
         with self._lock:
             self._set(key, value, timeout)
 
     def incr(self, key, delta=1, version=None):
-        with self._lock:
-            # remain locked the entire time so the incr is guaranteed to be correct
-            value, exp = self._get(key, version=version)
-            if value is None:
-                raise ValueError("Key '%s' not found" % key)
-            new_value = value + delta
-            new_key = self.make_key(key, version=version)
-            self._cache[new_key] = (new_value, exp)
-        return new_value
-
-    def has_key(self, key, version=None):
-        # _has_expired will do the locking
-        if not self._has_expired(key, version=version):
-            return True
-
-        with self._lock:
-            try:
-                del self._cache[key]
-            except KeyError:
-                pass
-            return False
-
-    def delete(self, key, version=None):
         key = self.make_key(key, version=version)
         with self._lock:
-            try:
-                del self._cache[key]
-            except KeyError:
-                pass
-
-    def clear(self):
-        with self._lock:
-            self._cache.clear()
-
-    def _has_expired(self, key, version=None):
-        _, exp = self._get(key, version=version)
-        return self._is_expired(exp)
-
-    def _is_expired(self, expiration):
-        if expiration is None or expiration > time.time():
-            return False
-        return True
+            if self._has_expired(key):
+                self._delete(key)
+                raise ValueError(f"Key '{key}' not found")
+            value = self._cache[key]
+            new_value = value + delta
+            self._cache[key] = new_value
+            self._cache.move_to_end(key, last=False)
+        return new_value

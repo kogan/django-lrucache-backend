@@ -1,7 +1,26 @@
 History
 =======
 
+4.0.0 (2020-04-04)
+------------------
+
+Implementation now based on the built in Django LocMemBackend as it switched
+to an LRU strategy in [version 2.1](https://docs.djangoproject.com/en/2.1/topics/cache/#local-memory-caching).
+
+The only differences now are that keys are not validated against memcache rules,
+and objects are not pickled.
+
+* Dropped dependency on lru-dict, now using OrderedDict as per LocMemBackend
+* Honour CULL_FREQUENCY setting as per LocMemBackend
+
+Potential Compatability Issue:
+
+    Performance seems to be much better when CULL_FREQUENCY == MAX_ENTRIES as it
+    allows the LRU algorithm to work more effectively.
+
+
 3.0.0 (2020-04-03)
+------------------
 
 * Dropped support for Django 1.11
 * Dropped support for Django < 2.2
