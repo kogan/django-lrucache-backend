@@ -4,7 +4,7 @@ from __future__ import absolute_import, print_function, unicode_literals
 import time
 
 from django.test import TestCase
-from lrucache_backend import LRUObjectCache
+from lrucache_backend import LocMemObjectCache, LRUObjectCache
 
 
 # functions/classes for complex data type tests
@@ -655,3 +655,8 @@ class BackendObjectCacheTests(ObjectCacheTests):
         from django.core.cache import cache
 
         self.cache = cache
+
+
+class PureObjectCacheTests(ObjectCacheTests):
+    def setUp(self):
+        self.cache = LocMemObjectCache("lru_pure", dict(max_entries=50, cull_frequency=10))
