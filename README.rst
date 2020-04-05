@@ -9,25 +9,34 @@ django-lrucache-backend
    :target: https://travis-ci.org/kogan/django-lrucache-backend
    :alt: Latest Travis CI build status
 
-A smarter local memory cache backend for Django.
+A global object cache backend for Django.
 
-.. image:: benchmarking/2.0.0/objects-get.png
+.. image:: benchmarking/4.0.0/objects-get.png
    :alt: Cache Performance
 
-`Set Performance <benchmarking/2.0.0/objects-set.png>`_. `Delete performance
-<benchmarking/2.0.0/objects-delete.png>`_.
+`Set Performance <benchmarking/4.0.0/objects-set.png>`_. `Delete performance
+<benchmarking/4.0.0/objects-delete.png>`_.
 
 About
 -----
 
-`lrucache_backend` is an in-memory cache that improves upon the existing
-`LocMemCache` that Django provides.
+`lrucache_backend` is an in-memory cache that has differing goals to the
+`LocMemCache` backend that Django provides.
 
-Comes with cache timeouts and a smart eviction strategy that prefers to keep
-keys that are used often and evict keys that are not.
+Originally its purpose was to improve the cache eviction strategy, using an LRU
+algorithm over a random cull. However, Django 2.1 changed the LocMemCache to also
+use an LRU strategy.
 
-Originally developed to avoid poorly reimplementing local object stores for
-service layer objects. For example:
+Now, `lrucache_backend` has two major differences from Django.
+
+1. Eliminates key char validation, improving performance at the cost of not
+   being portable with memcache backends.
+
+2. Eliminates serialization (pickling), allowing instances to be shared across
+   requests. Any mutations performed on cache objects are maintained.
+
+`lrucache_backend` functions as a global object cache, and uses a familiar Django
+interface to avoid poorly reimplementing local object caches in service layers:
 
 .. code-block:: python
 
@@ -98,7 +107,6 @@ Differences from LocMemCache
 
 - Avoids pickling
 - Avoids key name validation
-- Uses an LRU eviction algorithm rather than a random percentage culling strategy
 
 Installation
 ------------
@@ -110,11 +118,10 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-* `lru-dict <https://pypi.python.org/pypi/lru-dict/>`_.
+There are no longer any external dependencies. `lru-dict` used to be a dependency,
+but as since been replaced with the built in `OrderedDict` as a consequence of
+now deriving from the built in `LocMemCache`.
 
-`lru-dict` is implemented in C and is unlikely to work with non-CPython
-implementations. There *are* compatible pure python libraries. If you need this
-ability, please open an Issue!
 
 Usage
 -----
@@ -128,11 +135,17 @@ Configure your `CACHES` Django setting appropriately:
             'BACKEND': 'lrucache_backend.LRUObjectCache',
             'TIMEOUT': 600,
             'OPTIONS': {
-                'MAX_ENTRIES': 100
+                'MAX_ENTRIES': 100,
+                'CULL_FREQUENCY: 100,
             },
             'NAME': 'optional-name'
         }
     }
+
+Note:
+    Set CULL_FREQUENCY == MAX_ENTRIES to only delete a single key per cull to
+    only eliminate a single entry per cull. This maintains the LRU property most
+    effectively, but can have performance implications.
 
 And then use the cache as you would any other:
 
