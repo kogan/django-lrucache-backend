@@ -93,7 +93,7 @@ def prepare(name):
 def dispatch():
     setup()
 
-    for name in ["locmem", "lrumem", "lrumem_pure"]:
+    for name in ["locmem", "lrumem"]:
         shutil.rmtree("tmp", ignore_errors=True)
 
         preparer = Thread(target=prepare, args=(name,))
