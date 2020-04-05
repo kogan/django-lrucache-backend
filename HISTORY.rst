@@ -18,6 +18,47 @@ Potential Compatability Issue:
     Performance seems to be much better when CULL_FREQUENCY == MAX_ENTRIES as it
     allows the LRU algorithm to work more effectively.
 
+Benchmarks ::
+
+    ========= ========= ========= ========= ========= ========= ========= =========
+    Timings for locmem (django) objects-500
+    -------------------------------------------------------------------------------
+    Action     Count      Miss    Median       P90       P99       Max     Total
+    ========= ========= ========= ========= ========= ========= ========= =========
+        get    712424     72448 148.058us 185.013us 346.899us   8.008ms 113.785s
+        set     71473         0 152.826us 191.927us 360.012us   4.567ms  11.797s
+    delete      8095         0 144.958us 180.960us 339.031us   4.239ms   1.270s
+        Total    791992                                                   126.852s
+    ========= ========= ========= ========= ========= ========= ========= =========
+
+
+    ========= ========= ========= ========= ========= ========= ========= =========
+    Timings for lrumem (lru-dict) objects-500
+    -------------------------------------------------------------------------------
+    Action     Count      Miss    Median       P90       P99       Max     Total
+    ========= ========= ========= ========= ========= ========= ========= =========
+        get    712450     72398  99.897us 180.960us 307.083us  15.951ms  80.657s
+        set     71441         0 100.136us 180.006us 296.116us  12.349ms   8.059s
+    delete      8101         0  99.659us 180.960us 291.109us 890.970us 908.009ms
+        Total    791992                                                    89.624s
+    ========= ========= ========= ========= ========= ========= ========= =========
+
+
+    ========= ========= ========= ========= ========= ========= ========= =========
+    Timings for lrumem (OrderedDict) objects-500
+    -------------------------------------------------------------------------------
+    Action     Count      Miss    Median       P90       P99       Max     Total
+    ========= ========= ========= ========= ========= ========= ========= =========
+        get    712437     72379 105.381us 124.931us 249.147us   7.124ms  80.715s
+        set     71465         0 107.050us 126.839us 251.055us   4.267ms   8.204s
+    delete      8090         0 105.143us 123.739us 243.187us   2.800ms 911.312ms
+        Total    791992                                                    89.831s
+    ========= ========= ========= ========= ========= ========= ========= =========
+
+Note, these benchmarks are a special once off showing the difference between the older
+lru-dict dependency and the new OrderedDict implementation. It's also been updated
+with performance stats from the latest Django implementation (2.2).
+
 
 3.0.0 (2020-04-03)
 ------------------
