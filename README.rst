@@ -143,7 +143,7 @@ Configure your `CACHES` Django setting appropriately:
     }
 
 Note:
-    Set CULL_FREQUENCE == MAX_ENTRIES to only delete a single key per cull to
+    Set CULL_FREQUENCY == MAX_ENTRIES to only delete a single key per cull to
     only eliminate a single entry per cull. This maintains the LRU property most
     effectively, but can have performance implications.
 

@@ -8,7 +8,7 @@ CACHES = {
     "default": {
         "BACKEND": "lrucache_backend.LRUObjectCache",
         "TIMEOUT": 600,
-        "OPTIONS": {"MAX_ENTRIES": 50, "CULL_FREQUENCE": 50},
+        "OPTIONS": {"MAX_ENTRIES": 50, "CULL_FREQUENCY": 50},
         "NAME": "testingcache",
     },
     "locmem": {
