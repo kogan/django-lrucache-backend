@@ -11,11 +11,12 @@ django-lrucache-backend
 
 A global object cache backend for Django.
 
-.. image:: benchmarking/4.0.0/objects-get.png
+.. image:: https://github.com/kogan/django-lrucache-backend/blob/master/benchmarking/4.0.0/objects-get.png
    :alt: Cache Performance
 
-`Set Performance <benchmarking/4.0.0/objects-set.png>`_. `Delete performance
-<benchmarking/4.0.0/objects-delete.png>`_.
+`Set Performance <https://github.com/kogan/django-lrucache-backend/blob/master/benchmarking/4.0.0/objects-set.png>`_.
+
+`Delete performance <https://github.com/kogan/django-lrucache-backend/blob/master/benchmarking/4.0.0/objects-delete.png>`_.
 
 About
 -----
