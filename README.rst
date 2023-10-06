@@ -137,7 +137,7 @@ Configure your `CACHES` Django setting appropriately:
             'TIMEOUT': 600,
             'OPTIONS': {
                 'MAX_ENTRIES': 100,
-                'CULL_FREQUENCY: 100,
+                'CULL_FREQUENCY': 100,
             },
             'NAME': 'optional-name'
         }
